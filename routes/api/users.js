@@ -1,97 +1,27 @@
 const express = require('express');
 const router = express.Router();
-const bcrypt = require('bcryptjs');
-const jwt = require('jsonwebtoken');
-const User = require('../../models/User');
+const auth = require('../../middleware/auth');
+const userController = require('../../controllers/userController');
 
-// Регистрация пользователя
-router.post('/register', async (req, res) => {
-    try {
-        const { name, email, password } = req.body;
+// Получить профиль пользователя
+router.get('/me', auth, userController.getProfile);
 
-        // Проверяем, существует ли пользователь
-        let user = await User.findOne({ email });
-        if (user) {
-            return res.status(400).json({ message: 'Пользователь с таким email уже существует' });
-        }
+// Обновить профиль пользователя
+router.put('/me', auth, userController.updateProfile);
 
-        // Создаем нового пользователя
-        user = new User({
-            name,
-            email,
-            password
-        });
+// Экспорт данных пользователя
+router.get('/export', auth, userController.exportUserData);
 
-        await user.save();
+// Получить список пользователей (только для админов)
+router.get('/', auth, userController.getUsers);
 
-        // Создаем JWT токен
-        const token = jwt.sign(
-            { userId: user._id },
-            process.env.JWT_SECRET,
-            { expiresIn: '24h' }
-        );
+// Получить пользователя по ID (только для админов)
+router.get('/:id', auth, userController.getUserById);
 
-        // Отправляем ответ без пароля
-        const userResponse = user.toObject();
-        delete userResponse.password;
+// Обновить пользователя (только для админов)
+router.put('/:id', auth, userController.updateUser);
 
-        res.json({
-            token,
-            user: userResponse
-        });
-    } catch (err) {
-        console.error(err);
-        res.status(500).json({ message: 'Ошибка при регистрации пользователя' });
-    }
-});
-
-// Вход пользователя
-router.post('/login', async (req, res) => {
-    try {
-        const { email, password } = req.body;
-
-        // Проверяем существование пользователя
-        const user = await User.findOne({ email });
-        if (!user) {
-            return res.status(400).json({ message: 'Неверный email или пароль' });
-        }
-
-        // Проверяем пароль
-        const isMatch = await user.comparePassword(password);
-        if (!isMatch) {
-            return res.status(400).json({ message: 'Неверный email или пароль' });
-        }
-
-        // Создаем JWT токен
-        const token = jwt.sign(
-            { userId: user._id },
-            process.env.JWT_SECRET,
-            { expiresIn: '24h' }
-        );
-
-        // Отправляем ответ без пароля
-        const userResponse = user.toObject();
-        delete userResponse.password;
-
-        res.json({
-            token,
-            user: userResponse
-        });
-    } catch (err) {
-        console.error(err);
-        res.status(500).json({ message: 'Ошибка при входе в систему' });
-    }
-});
-
-// Получение информации о текущем пользователе
-router.get('/me', async (req, res) => {
-    try {
-        const user = await User.findById(req.user.userId).select('-password');
-        res.json(user);
-    } catch (err) {
-        console.error(err);
-        res.status(500).json({ message: 'Ошибка при получении данных пользователя' });
-    }
-});
+// Удалить пользователя (только для админов)
+router.delete('/:id', auth, userController.deleteUser);
 
 module.exports = router; 

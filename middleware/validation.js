@@ -1,13 +1,21 @@
 const Joi = require('joi');
+const { AppError } = require('./errorHandler');
 
-const validate = (schema) => {
+const validate = (schemaName) => {
     return (req, res, next) => {
-        const { error } = schema.validate(req.body);
+        const schema = schemas[schemaName];
+        if (!schema) {
+            throw new AppError(`Схема валидации '${schemaName}' не найдена`, 500);
+        }
+
+        const { error } = schema.validate(req.body, { 
+            abortEarly: false,
+            stripUnknown: true
+        });
+
         if (error) {
-            return res.status(400).json({
-                message: 'Ошибка валидации',
-                details: error.details.map(detail => detail.message)
-            });
+            const details = error.details.map(detail => detail.message).join(', ');
+            throw new AppError(`Ошибка валидации: ${details}`, 400);
         }
         next();
     };
@@ -27,9 +35,7 @@ const schemas = {
     
     post: Joi.object({
         title: Joi.string().min(3).max(100).required(),
-        content: Joi.string().min(10).required(),
-        tags: Joi.array().items(Joi.string().min(2).max(20)),
-        status: Joi.string().valid('draft', 'published')
+        content: Joi.string().min(10).required()
     }),
     
     comment: Joi.object({

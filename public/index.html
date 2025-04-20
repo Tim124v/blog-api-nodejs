@@ -5,18 +5,19 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>My Blog</title>
     <link rel="stylesheet" href="/css/styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
     <nav class="navbar">
         <div class="container">
             <a href="/" class="logo">My Blog</a>
             <div id="authButtons" class="auth-buttons">
-                <button onclick="showAuthModal('login')" class="btn btn-outline">Sign In</button>
-                <button onclick="showAuthModal('register')" class="btn btn-primary">Sign Up</button>
+                <button onclick="showAuthModal('login')" class="btn btn-outline">Войти</button>
+                <button onclick="showAuthModal('register')" class="btn btn-primary">Регистрация</button>
             </div>
             <div id="userProfile" class="user-profile">
                 <span id="userName"></span>
-                <button onclick="logout()" class="btn btn-outline">Sign Out</button>
+                <button onclick="logout()" class="btn btn-outline">Выйти</button>
             </div>
         </div>
     </nav>
@@ -40,16 +41,17 @@
             </div>
         </form>
 
+        <div class="error-message"></div>
         <div id="posts" class="posts"></div>
         <div id="pagination" class="pagination"></div>
     </main>
 
     <div id="authModal" class="modal">
         <div class="modal-content">
-            <h2 id="authTitle">Sign In</h2>
+            <h2 id="authTitle">Войти</h2>
             <form id="authForm">
-                <div id="nameGroup" class="form-group">
-                    <label for="name">Name</label>
+                <div id="nameGroup" class="form-group" style="display: none;">
+                    <label for="name">Имя</label>
                     <input type="text" id="name">
                 </div>
                 <div class="form-group">
@@ -57,12 +59,12 @@
                     <input type="email" id="email" required>
                 </div>
                 <div class="form-group">
-                    <label for="password">Password</label>
+                    <label for="password">Пароль</label>
                     <input type="password" id="password" required>
                 </div>
                 <div class="form-actions">
-                    <button type="submit" id="authSubmit" class="btn btn-primary">Sign In</button>
-                    <button type="button" onclick="hideAuthModal()" class="btn btn-outline">Cancel</button>
+                    <button type="submit" id="authSubmit" class="btn btn-primary">Войти</button>
+                    <button type="button" onclick="hideAuthModal()" class="btn btn-outline">Отмена</button>
                 </div>
             </form>
         </div>

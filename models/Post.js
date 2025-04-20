@@ -30,6 +30,11 @@ const postSchema = new mongoose.Schema({
         ref: 'User',
         required: true
     },
+    status: {
+        type: String,
+        enum: ['active', 'hidden', 'deleted'],
+        default: 'active'
+    },
     comments: [commentSchema]
 }, {
     timestamps: true

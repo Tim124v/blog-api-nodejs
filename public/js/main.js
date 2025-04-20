@@ -5,6 +5,9 @@ let currentUser = null;
 let authMode = 'login';
 let posts = [];
 
+// Get the current host and port
+const API_BASE_URL = window.location.origin;
+
 function togglePostForm() {
     const form = document.getElementById('postForm');
     form.classList.toggle('active');
@@ -20,7 +23,7 @@ function getAuthHeaders() {
 
 async function fetchPosts() {
     try {
-        const response = await fetch('http://localhost:8080/api/posts');
+        const response = await fetch(`${API_BASE_URL}/api/posts`);
         if (!response.ok) throw new Error('Ошибка при загрузке постов');
         const data = await response.json();
         posts = data;
@@ -144,7 +147,7 @@ function changePage(page) {
 
 async function createPost(title, content) {
     try {
-        const response = await fetch('http://localhost:8080/api/posts', {
+        const response = await fetch(`${API_BASE_URL}/api/posts`, {
             method: 'POST',
             headers: getAuthHeaders(),
             body: JSON.stringify({ title, content })
@@ -164,7 +167,7 @@ async function deletePost(postId) {
     }
 
     try {
-        const response = await fetch(`http://localhost:8080/api/posts/${postId}`, {
+        const response = await fetch(`${API_BASE_URL}/api/posts/${postId}`, {
             method: 'DELETE',
             headers: getAuthHeaders()
         });
@@ -189,7 +192,7 @@ async function editPost(postId) {
     }
 
     try {
-        const response = await fetch(`http://localhost:8080/api/posts/${postId}`, {
+        const response = await fetch(`${API_BASE_URL}/api/posts/${postId}`, {
             method: 'PUT',
             headers: getAuthHeaders(),
             body: JSON.stringify({
@@ -213,7 +216,7 @@ async function addComment(postId, content) {
     if (!content.trim()) return;
 
     try {
-        const response = await fetch(`http://localhost:8080/api/posts/${postId}/comments`, {
+        const response = await fetch(`${API_BASE_URL}/api/posts/${postId}/comments`, {
             method: 'POST',
             headers: getAuthHeaders(),
             body: JSON.stringify({ content })
@@ -281,7 +284,7 @@ async function handleAuth(event) {
         const endpoint = authMode === 'register' ? '/api/auth/register' : '/api/auth/login';
         const body = authMode === 'register' ? { name, email, password } : { email, password };
 
-        const response = await fetch(`http://localhost:8080${endpoint}`, {
+        const response = await fetch(`${API_BASE_URL}${endpoint}`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -348,7 +351,7 @@ async function checkAuth() {
     
     if (token && savedUser) {
         try {
-            const response = await fetch('http://localhost:8080/api/auth/me', {
+            const response = await fetch(`${API_BASE_URL}/api/auth/me`, {
                 headers: getAuthHeaders()
             });
             

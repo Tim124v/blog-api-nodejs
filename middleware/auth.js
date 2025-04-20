@@ -1,4 +1,5 @@
 const jwt = require('jsonwebtoken');
+const { AppError } = require('./errorHandler');
 
 module.exports = (req, res, next) => {
     if (req.method === 'GET') {
@@ -6,21 +7,42 @@ module.exports = (req, res, next) => {
     }
 
     try {
-        const token = req.header('Authorization').replace('Bearer ', '');
+        // Получаем токен из заголовка
+        const authHeader = req.header('Authorization');
         
-        if (!token) {
-            return res.status(401).json({ message: 'Нет токена авторизации' });
+        if (!authHeader) {
+            throw new AppError('Нет токена авторизации', 401);
         }
 
+        const token = authHeader.startsWith('Bearer ') 
+            ? authHeader.slice(7) 
+            : authHeader;
+
+        if (!token) {
+            throw new AppError('Некорректный формат токена', 401);
+        }
+
+        // Проверяем токен
         try {
-            // Проверяем токен
             const decoded = jwt.verify(token, process.env.JWT_SECRET);
-            req.user = decoded;
+            req.user = {
+                id: decoded.id,
+                role: decoded.role || 'user' // Если роль не указана, используем 'user'
+            };
             next();
         } catch (err) {
-            res.status(401).json({ message: 'Токен недействителен' });
+            throw new AppError('Токен недействителен', 401);
         }
     } catch (err) {
-        res.status(401).json({ message: 'Ошибка авторизации' });
+        if (err instanceof AppError) {
+            return res.status(err.statusCode).json({ 
+                status: 'error',
+                message: err.message 
+            });
+        }
+        return res.status(500).json({ 
+            status: 'error',
+            message: 'Ошибка сервера при проверке авторизации' 
+        });
     }
 }; 

@@ -26,7 +26,13 @@ const userSchema = new mongoose.Schema({
         default: 'user'
     }
 }, {
-    timestamps: true
+    timestamps: true,
+    toJSON: {
+        transform: function(doc, ret) {
+            delete ret.password;
+            return ret;
+        }
+    }
 });
 
 // Хэширование пароля перед сохранением
