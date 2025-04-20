@@ -1,0 +1,409 @@
+@font-face {
+    font-family: 'Montserrat';
+    src: url('../fonts/Montserrat-Regular.woff2') format('woff2');
+    font-weight: 400;
+    font-style: normal;
+}
+@font-face {
+    font-family: 'Montserrat';
+    src: url('../fonts/Montserrat-Medium.woff2') format('woff2');
+    font-weight: 500;
+    font-style: normal;
+}
+@font-face {
+    font-family: 'Montserrat';
+    src: url('../fonts/Montserrat-SemiBold.woff2') format('woff2');
+    font-weight: 600;
+    font-style: normal;
+}
+@font-face {
+    font-family: 'Montserrat';
+    src: url('../fonts/Montserrat-Bold.woff2') format('woff2');
+    font-weight: 700;
+    font-style: normal;
+}
+
+/* Основные стили */
+:root {
+    --primary-color: #1a73e8;
+    --secondary-color: #4285f4;
+    --background-color: #f8f9fa;
+    --text-color: #202124;
+    --border-radius: 12px;
+    --box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    --font-size-small: 0.875rem;
+    --font-size-normal: 1rem;
+    --font-size-large: 1.25rem;
+    --font-size-xl: 1.5rem;
+    --spacing-small: 0.5rem;
+    --spacing-normal: 1rem;
+    --spacing-large: 1.5rem;
+    --spacing-xl: 2rem;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Montserrat', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+body {
+    background-color: var(--background-color);
+    color: var(--text-color);
+    line-height: 1.6;
+    font-size: var(--font-size-normal);
+}
+
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: var(--spacing-normal);
+}
+
+/* Навигация */
+.navbar {
+    background: linear-gradient(to right, #2962ff, #1565c0);
+    padding: 1.2rem 0;
+    margin-bottom: var(--spacing-xl);
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.15);
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+}
+
+.navbar .container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    max-width: 1400px;
+}
+
+.logo {
+    color: white;
+    font-size: 2rem;
+    font-weight: 700;
+    text-decoration: none;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    position: relative;
+    padding: var(--spacing-small) 0;
+}
+
+.logo:hover {
+    text-shadow: 0 0 15px rgba(255, 255, 255, 0.5);
+    transform: scale(1.02);
+    transition: all 0.3s ease;
+}
+
+.auth-buttons {
+    display: flex;
+    gap: 1.2rem;
+    align-items: center;
+}
+
+.btn {
+    padding: 0.8rem 1.8rem;
+    border: none;
+    border-radius: 50px;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 0.95rem;
+    letter-spacing: 0.5px;
+    transition: all 0.3s ease;
+    text-transform: none;
+}
+
+.btn-primary {
+    background-color: white;
+    color: #1565c0;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    background-color: #f8f9fa;
+}
+
+.btn-outline {
+    background-color: transparent;
+    color: white;
+    border: 2px solid rgba(255, 255, 255, 0.9);
+    padding: 0.7rem 1.7rem;
+}
+
+.btn-outline:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+    border-color: white;
+    transform: translateY(-2px);
+}
+
+.user-profile {
+    display: none;
+    align-items: center;
+    gap: 1.2rem;
+    color: white;
+}
+
+.user-profile.active {
+    display: flex;
+}
+
+#userName {
+    font-weight: 500;
+    font-size: 1rem;
+    color: rgba(255, 255, 255, 0.9);
+}
+
+/* Адаптивность навигации */
+@media (max-width: 768px) {
+    .navbar {
+        padding: 1rem 0;
+    }
+
+    .logo {
+        font-size: 1.5rem;
+    }
+
+    .btn {
+        padding: 0.7rem 1.4rem;
+        font-size: 0.9rem;
+    }
+
+    .auth-buttons {
+        gap: 0.8rem;
+    }
+}
+
+/* Посты */
+.new-post-btn {
+    margin-bottom: var(--spacing-xl);
+    display: inline-block;
+}
+
+.posts {
+    display: grid;
+    gap: var(--spacing-xl);
+    grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+}
+
+.post {
+    background: white;
+    border-radius: var(--border-radius);
+    padding: var(--spacing-large);
+    box-shadow: var(--box-shadow);
+    transition: var(--transition);
+    border: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.post:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+}
+
+.post-header {
+    margin-bottom: var(--spacing-large);
+}
+
+.post-title {
+    font-size: var(--font-size-xl);
+    color: var(--text-color);
+    margin-bottom: var(--spacing-small);
+    font-weight: 600;
+    line-height: 1.3;
+}
+
+.post-meta {
+    display: flex;
+    justify-content: space-between;
+    color: #666;
+    font-size: var(--font-size-small);
+    padding-bottom: var(--spacing-normal);
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.post-content {
+    color: #444;
+    margin-bottom: var(--spacing-large);
+    line-height: 1.8;
+    font-size: var(--font-size-normal);
+}
+
+.post-actions {
+    display: flex;
+    gap: var(--spacing-normal);
+}
+
+.post-actions button {
+    padding: var(--spacing-small) var(--spacing-normal);
+    border-radius: var(--border-radius);
+    border: 1px solid #ddd;
+    background: white;
+    color: var(--text-color);
+    cursor: pointer;
+    transition: var(--transition);
+    font-size: var(--font-size-small);
+}
+
+.post-actions button:hover {
+    background: var(--background-color);
+    border-color: var(--primary-color);
+    color: var(--primary-color);
+}
+
+/* Комментарии */
+.comments {
+    margin-top: var(--spacing-large);
+    padding-top: var(--spacing-large);
+    border-top: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.comments h3 {
+    font-size: var(--font-size-large);
+    color: var(--text-color);
+    margin-bottom: var(--spacing-normal);
+    font-weight: 500;
+}
+
+.comment {
+    background: var(--background-color);
+    padding: var(--spacing-normal);
+    border-radius: var(--border-radius);
+    margin-bottom: var(--spacing-normal);
+}
+
+.comment-content {
+    color: #444;
+}
+
+.comment-content p {
+    margin-bottom: var(--spacing-small);
+}
+
+.comment-content small {
+    color: #666;
+    font-size: var(--font-size-small);
+}
+
+.add-comment textarea {
+    width: 100%;
+    padding: var(--spacing-normal);
+    border: 1px solid #ddd;
+    border-radius: var(--border-radius);
+    resize: vertical;
+    min-height: 80px;
+    margin-top: var(--spacing-normal);
+    transition: var(--transition);
+    font-size: var(--font-size-normal);
+}
+
+.add-comment textarea:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 2px rgba(26, 115, 232, 0.1);
+}
+
+/* Формы */
+.modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(4px);
+    z-index: 1100;
+    justify-content: center;
+    align-items: center;
+}
+
+.modal.active {
+    display: flex;
+}
+
+.modal-content {
+    background: white;
+    padding: var(--spacing-xl);
+    border-radius: var(--border-radius);
+    width: 100%;
+    max-width: 500px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+    position: relative;
+}
+
+.form-group {
+    margin-bottom: var(--spacing-large);
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: var(--spacing-small);
+    color: var(--text-color);
+    font-weight: 500;
+    font-size: var(--font-size-normal);
+}
+
+.form-group input,
+.form-group textarea {
+    width: 100%;
+    padding: var(--spacing-normal);
+    border: 1px solid #ddd;
+    border-radius: var(--border-radius);
+    font-size: var(--font-size-normal);
+    transition: var(--transition);
+    background: var(--background-color);
+}
+
+.form-group input:focus,
+.form-group textarea:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 2px rgba(26, 115, 232, 0.1);
+    background: white;
+}
+
+/* Утилиты */
+.error-message {
+    background: #fee2e2;
+    color: #dc2626;
+    padding: var(--spacing-normal);
+    border-radius: var(--border-radius);
+    margin: var(--spacing-normal) 0;
+    font-size: var(--font-size-normal);
+}
+
+/* Адаптивность */
+@media (max-width: 768px) {
+    :root {
+        --font-size-xl: 1.25rem;
+        --font-size-large: 1.125rem;
+        --spacing-xl: 1.5rem;
+        --spacing-large: 1rem;
+    }
+
+    .container {
+        padding: var(--spacing-small);
+    }
+    
+    .posts {
+        grid-template-columns: 1fr;
+        gap: var(--spacing-large);
+    }
+    
+    .auth-buttons {
+        flex-direction: column;
+        gap: var(--spacing-small);
+    }
+    
+    .post {
+        padding: var(--spacing-normal);
+    }
+
+    .modal-content {
+        margin: var(--spacing-normal);
+        padding: var(--spacing-large);
+    }
+} 

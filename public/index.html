@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Blog</title>
+    <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="container">
+            <a href="/" class="logo">My Blog</a>
+            <div id="authButtons" class="auth-buttons">
+                <button onclick="showAuthModal('login')" class="btn btn-outline">Sign In</button>
+                <button onclick="showAuthModal('register')" class="btn btn-primary">Sign Up</button>
+            </div>
+            <div id="userProfile" class="user-profile">
+                <span id="userName"></span>
+                <button onclick="logout()" class="btn btn-outline">Sign Out</button>
+            </div>
+        </div>
+    </nav>
+
+    <main class="container">
+        <button onclick="togglePostForm()" class="btn btn-primary new-post-btn">Новый пост</button>
+        
+        <form id="postForm" class="post-form">
+            <h2>Создать новый пост</h2>
+            <div class="form-group">
+                <label for="postTitle">Заголовок</label>
+                <input type="text" id="postTitle" required>
+            </div>
+            <div class="form-group">
+                <label for="postContent">Содержание</label>
+                <textarea id="postContent" required></textarea>
+            </div>
+            <div class="form-actions">
+                <button type="submit" class="btn btn-primary">Опубликовать</button>
+                <button type="button" onclick="togglePostForm()" class="btn btn-outline">Отмена</button>
+            </div>
+        </form>
+
+        <div id="posts" class="posts"></div>
+        <div id="pagination" class="pagination"></div>
+    </main>
+
+    <div id="authModal" class="modal">
+        <div class="modal-content">
+            <h2 id="authTitle">Sign In</h2>
+            <form id="authForm">
+                <div id="nameGroup" class="form-group">
+                    <label for="name">Name</label>
+                    <input type="text" id="name">
+                </div>
+                <div class="form-group">
+                    <label for="email">Email</label>
+                    <input type="email" id="email" required>
+                </div>
+                <div class="form-group">
+                    <label for="password">Password</label>
+                    <input type="password" id="password" required>
+                </div>
+                <div class="form-actions">
+                    <button type="submit" id="authSubmit" class="btn btn-primary">Sign In</button>
+                    <button type="button" onclick="hideAuthModal()" class="btn btn-outline">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="/js/main.js"></script>
+</body>
+</html>
