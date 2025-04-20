@@ -1,16 +1,17 @@
 # Blog API
 
-Простой REST API для блога, построенный на Node.js, Express и MongoDB.
+A RESTful API for a blog platform built with Node.js, Express and MongoDB.
 
-## Функциональность
+## Features
 
-- Регистрация и аутентификация пользователей
-- Создание, чтение, обновление и удаление постов
-- Защищенные маршруты с JWT аутентификацией
-- Поиск по постам
-- Теги для постов
+- User registration and authentication
+- JWT-based protected routes
+- CRUD operations for blog posts
+- Comments system
+- Post search functionality
+- Post tags support
 
-## Технологии
+## Tech Stack
 
 - Node.js
 - Express.js
@@ -20,37 +21,51 @@
 - Bcrypt
 - CORS
 
-## Установка
+## Getting Started
 
-1. Клонируйте репозиторий
-2. Установите зависимости:
+1. Clone the repository:
+```bash
+git clone https://github.com/Tim124v/blog-api-nodejs.git
+cd blog-api-nodejs
+```
+
+2. Install dependencies:
 ```bash
 npm install
 ```
-3. Создайте файл .env и добавьте необходимые переменные окружения:
+
+3. Create `.env` file in the root directory:
+```env
+PORT=8080
+MONGODB_URI=your_mongodb_connection_string
+JWT_SECRET=your_jwt_secret
 ```
-PORT=3000
-MONGODB_URI=mongodb://localhost:27017/blog-api
-JWT_SECRET=your-secret-key
-```
-4. Запустите сервер:
+
+4. Run the development server:
 ```bash
-node index.js
+npm run dev
 ```
+
+5. Open [http://localhost:8080](http://localhost:8080) in your browser.
 
 ## API Endpoints
 
-### Аутентификация
-- POST /api/auth/register - Регистрация нового пользователя
-- POST /api/auth/login - Вход пользователя
+### Auth
+- POST `/api/auth/register` - Register new user
+- POST `/api/auth/login` - Login user
+- GET `/api/auth/me` - Get current user
 
-### Посты
-- GET /api/posts - Получить все посты
-- GET /api/posts/:id - Получить пост по ID
-- POST /api/posts - Создать новый пост (требуется аутентификация)
-- PUT /api/posts/:id - Обновить пост (требуется аутентификация)
-- DELETE /api/posts/:id - Удалить пост (требуется аутентификация)
+### Posts
+- GET `/api/posts` - Get all posts
+- POST `/api/posts` - Create new post
+- GET `/api/posts/:id` - Get post by ID
+- PUT `/api/posts/:id` - Update post
+- DELETE `/api/posts/:id` - Delete post
 
-## Лицензия
+### Comments
+- POST `/api/posts/:id/comments` - Add comment to post
+- DELETE `/api/posts/:id/comments/:commentId` - Delete comment
+
+## License
 
 MIT 

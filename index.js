@@ -65,14 +65,16 @@ app.use((req, res) => {
 });
 
 // Подключение к MongoDB
-mongoose.connect(process.env.MONGODB_URI)
+mongoose.connect(process.env.MONGODB_URI, {
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
+    serverSelectionTimeoutMS: 5000
+})
 .then(() => {
     console.log('Connected to MongoDB');
-    // Запускаем сервер только после успешного подключения к базе данных
     const PORT = process.env.PORT || 8080;
     app.listen(PORT, () => {
         console.log(`Server is running on port ${PORT}`);
-        console.log(`Open http://localhost:${PORT} in your browser`);
     });
 })
 .catch(err => {
