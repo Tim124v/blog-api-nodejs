@@ -1,15 +1,19 @@
+require('dotenv').config();
 const express = require('express');
-const mongoose = require('mongoose');
 const cors = require('cors');
 const path = require('path');
+const mongoose = require('mongoose');
 const { errorHandler } = require('./middleware/errorHandler');
-require('dotenv').config();
+const connectDB = require('./config/db');
 
 const app = express();
 
+// Подключение к базе данных
+connectDB();
+
 // Middleware
 app.use(cors({
-    origin: ['http://localhost:3000', 'http://localhost:3002', 'http://localhost:3003', 'http://localhost:3004', 'http://localhost:8080'],
+    origin: process.env.ALLOWED_ORIGINS ? process.env.ALLOWED_ORIGINS.split(',') : ['http://localhost:3000'],
     credentials: true
 }));
 app.use(express.json());
@@ -20,8 +24,8 @@ app.use((req, res, next) => {
     res.setHeader(
         'Content-Security-Policy',
         "default-src 'self'; " +
-        "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com; " +
-        "font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com; " +
+        "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; " +
+        "font-src 'self' https://fonts.gstatic.com; " +
         "img-src 'self' data: https:; " +
         "connect-src 'self' http://localhost:* https://localhost:*; " +
         "script-src 'self' 'unsafe-inline'"
@@ -36,13 +40,11 @@ app.use('/api/posts', require('./routes/api/posts'));
 
 // Serve static files
 app.get('/', (req, res) => {
-    console.log('GET request to /');
     res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
 // Handle 404
 app.use((req, res, next) => {
-    console.log('404 handler:', req.path);
     if (req.path.startsWith('/api/')) {
         const error = new Error('Not Found');
         error.statusCode = 404;
@@ -56,33 +58,22 @@ app.use((req, res, next) => {
 app.use(errorHandler);
 
 const PORT = process.env.PORT || 8080;
-console.log('Starting server on port:', PORT);
-
 let server;
 
 // Connect to MongoDB and start server
 async function startServer() {
     try {
-        console.log('Connecting to MongoDB...');
-        await mongoose.connect(process.env.MONGODB_URI, {
-            serverSelectionTimeoutMS: 5000
-        });
+        await connectDB();
         console.log('MongoDB Connected');
 
         server = app.listen(PORT, '0.0.0.0', () => {
             console.log(`Server is running on http://localhost:${PORT}`);
         });
 
-        // Обработка ошибок сервера
         server.on('error', (error) => {
-            console.error('Server error:', error);
             if (error.code === 'EADDRINUSE') {
-                console.log(`Port ${PORT} is busy, trying to close previous connection...`);
                 require('child_process').exec(`npx kill-port ${PORT}`, (err) => {
-                    if (err) {
-                        console.error('Error killing process on port:', err);
-                    } else {
-                        console.log(`Successfully killed process on port ${PORT}`);
+                    if (!err) {
                         startServer();
                     }
                 });
@@ -100,12 +91,9 @@ process.on('SIGTERM', shutdown);
 process.on('SIGINT', shutdown);
 
 function shutdown() {
-    console.log('Received kill signal, shutting down gracefully');
     if (server) {
         server.close(() => {
-            console.log('Server closed');
             mongoose.connection.close(false, () => {
-                console.log('MongoDB connection closed');
                 process.exit(0);
             });
         });

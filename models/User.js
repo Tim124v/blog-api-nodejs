@@ -4,26 +4,37 @@ const bcrypt = require('bcryptjs');
 const userSchema = new mongoose.Schema({
     name: {
         type: String,
-        required: true
+        required: [true, 'Имя обязательно для заполнения'],
+        trim: true,
+        minlength: [2, 'Имя должно содержать минимум 2 символа'],
+        maxlength: [50, 'Имя не должно превышать 50 символов']
     },
     email: {
         type: String,
-        required: true,
+        required: [true, 'Email обязателен для заполнения'],
         unique: true,
-        lowercase: true
+        lowercase: true,
+        trim: true,
+        match: [/^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/, 'Пожалуйста, введите корректный email']
     },
     password: {
         type: String,
-        required: true
+        required: [true, 'Пароль обязателен для заполнения'],
+        minlength: [6, 'Пароль должен содержать минимум 6 символов']
     },
     avatar: {
         type: String,
-        default: 'https://via.placeholder.com/30'
+        default: 'https://via.placeholder.com/150'
     },
     role: {
         type: String,
         enum: ['user', 'moderator', 'admin'],
         default: 'user'
+    },
+    bio: {
+        type: String,
+        maxlength: [200, 'Биография не должна превышать 200 символов'],
+        default: ''
     }
 }, {
     timestamps: true,
@@ -50,7 +61,19 @@ userSchema.pre('save', async function(next) {
 
 // Метод для сравнения паролей
 userSchema.methods.comparePassword = async function(candidatePassword) {
-    return bcrypt.compare(candidatePassword, this.password);
+    try {
+        return await bcrypt.compare(candidatePassword, this.password);
+    } catch (error) {
+        throw new Error('Ошибка при сравнении паролей');
+    }
+};
+
+// Метод для получения публичного профиля
+userSchema.methods.getPublicProfile = function() {
+    const userObject = this.toObject();
+    delete userObject.password;
+    delete userObject.__v;
+    return userObject;
 };
 
 module.exports = mongoose.model('User', userSchema); 

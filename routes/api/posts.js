@@ -18,10 +18,7 @@ router.delete('/cleanup/title/:title', async (req, res) => {
     }
 });
 
-// Защищенные маршруты (требуют авторизации)
-router.use(auth);
-
-// Получение всех активных постов
+// Публичный маршрут для получения всех активных постов
 router.get('/', async (req, res) => {
     try {
         const posts = await Post.find({ status: 'active' })
@@ -30,9 +27,12 @@ router.get('/', async (req, res) => {
             .sort({ createdAt: -1 });
         res.json(posts);
     } catch (err) {
-        throw new AppError('Ошибка при получении постов', 500);
+        res.status(500).json({ message: 'Ошибка при получении постов' });
     }
 });
+
+// Защищенные маршруты (требуют авторизации)
+router.use(auth);
 
 // Получение конкретного поста
 router.get('/:id', async (req, res) => {
@@ -64,7 +64,7 @@ router.post('/', [auth, validate('post')], async (req, res) => {
         const post = new Post({
             title,
             content,
-            author: req.user.id,
+            author: req.user.userId,
             status: 'active'
         });
 
@@ -77,7 +77,7 @@ router.post('/', [auth, validate('post')], async (req, res) => {
         if (err instanceof AppError) {
             throw err;
         }
-        throw new AppError('Ошибка при создании поста', 500);
+        throw new AppError('Ошибка при создании поста: ' + err.message, 500);
     }
 });
 
