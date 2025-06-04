@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Particles from 'react-tsparticles';
 import { loadSlim } from 'tsparticles-slim';
@@ -16,6 +16,11 @@ const avatarList = [
 
 const defaultAvatar = avatarList[0];
 
+type SortType = 'date' | 'likes';
+type SortOrder = 'asc' | 'desc';
+
+const POSTS_PER_PAGE = 5;
+
 const App: React.FC = () => {
   const [profile, setProfile] = useState<{ name: string; avatar: string } | null>(null);
   const [showProfileModal, setShowProfileModal] = useState(false);
@@ -31,16 +36,49 @@ const App: React.FC = () => {
   const [mediaType, setMediaType] = useState<'image' | 'video' | null>(null);
   const [error, setError] = useState('');
   const [commentInputs, setCommentInputs] = useState<{ [postId: number]: string }>({});
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
+
+  // Состояния для редактирования
+  const [editingPost, setEditingPost] = useState<Post | null>(null);
+  const [editText, setEditText] = useState('');
+  const [editMedia, setEditMedia] = useState<File | null>(null);
+  const [editMediaPreview, setEditMediaPreview] = useState<string | null>(null);
+  const [editMediaType, setEditMediaType] = useState<'image' | 'video' | null>(null);
+
+  // Состояния для сортировки и поиска
+  const [sortType, setSortType] = useState<SortType>('date');
+  const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
 
   useEffect(() => {
-    const saved = localStorage.getItem('myblog-profile');
-    if (saved) {
-      setProfile(JSON.parse(saved));
-      setShowStart(false);
+    if (isInitialLoad) {
+      const savedProfile = localStorage.getItem('myblog-profile');
+      const savedPosts = localStorage.getItem('myblog-posts');
+      
+      if (savedProfile) {
+        setProfile(JSON.parse(savedProfile));
+        setShowStart(false);
+      } else {
+        setShowStart(true);
+      }
+
+      if (savedPosts) {
+        try {
+          const parsedPosts = JSON.parse(savedPosts);
+          setPosts(parsedPosts);
+        } catch (error) {
+        }
+      }
+      setIsInitialLoad(false);
     } else {
-      setShowStart(true);
+      try {
+        localStorage.setItem('myblog-posts', JSON.stringify(posts));
+      } catch (error) {
+       
+      }
     }
-  }, []);
+  }, [posts, isInitialLoad]);
 
   const saveProfile = () => {
     if (!profileName.trim()) return;
@@ -64,7 +102,11 @@ const App: React.FC = () => {
     }
     setMedia(file);
     setMediaType(file.type.startsWith('image/') ? 'image' : 'video');
-    setMediaPreview(URL.createObjectURL(file));
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      setMediaPreview(ev.target?.result as string);
+    };
+    reader.readAsDataURL(file);
     setError('');
   };
 
@@ -104,7 +146,10 @@ const App: React.FC = () => {
       likes: 0,
       comments: [],
     };
-    setPosts([newPost, ...posts]);
+    setPosts(prevPosts => {
+      const updatedPosts = [newPost, ...prevPosts];
+      return updatedPosts;
+    });
     setText('');
     setMedia(null);
     setMediaPreview(null);
@@ -161,8 +206,100 @@ const App: React.FC = () => {
     );
   };
 
+  // редактирования поста
+  const handleEditPost = (post: Post) => {
+    setEditingPost(post);
+    setEditText(post.text);
+    setEditMediaPreview(post.mediaUrl || null);
+    setEditMediaType(post.mediaType || null);
+  };
+
+  const handleSaveEdit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingPost) return;
+
+    setPosts(prevPosts =>
+      prevPosts.map(post =>
+        post.id === editingPost.id
+          ? {
+              ...post,
+              text: editText,
+              mediaUrl: editMediaPreview || undefined,
+              mediaType: editMediaType || undefined,
+              date: new Date().toLocaleString(), // Обновляем дату при редактировании
+            }
+          : post
+      )
+    );
+
+    setEditingPost(null);
+    setEditText('');
+    setEditMedia(null);
+    setEditMediaPreview(null);
+    setEditMediaType(null);
+  };
+
+  const handleEditMediaChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith('image/') && !file.type.startsWith('video/')) {
+      setError('Only images or videos are allowed');
+      return;
+    }
+    setEditMedia(file);
+    setEditMediaType(file.type.startsWith('image/') ? 'image' : 'video');
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      setEditMediaPreview(ev.target?.result as string);
+    };
+    reader.readAsDataURL(file);
+    setError('');
+  };
+
+  //сортировки и фильтрации постов
+  const filteredAndSortedPosts = useMemo(() => {
+    let result = [...posts];
+
+    // Поиск
+    if (searchQuery) {
+      const query = searchQuery.toLowerCase();
+      result = result.filter(
+        post =>
+          post.text.toLowerCase().includes(query) ||
+          post.author.toLowerCase().includes(query)
+      );
+    }
+
+    // Сортировка
+    result.sort((a, b) => {
+      if (sortType === 'date') {
+        const dateA = new Date(a.date).getTime();
+        const dateB = new Date(b.date).getTime();
+        return sortOrder === 'asc' ? dateA - dateB : dateB - dateA;
+      } else {
+        return sortOrder === 'asc'
+          ? a.likes - b.likes
+          : b.likes - a.likes;
+      }
+    });
+
+    return result;
+  }, [posts, searchQuery, sortType, sortOrder]);
+
+  // Пагинация
+  const totalPages = Math.ceil(filteredAndSortedPosts.length / POSTS_PER_PAGE);
+  const paginatedPosts = useMemo(() => {
+    const start = (currentPage - 1) * POSTS_PER_PAGE;
+    return filteredAndSortedPosts.slice(start, start + POSTS_PER_PAGE);
+  }, [filteredAndSortedPosts, currentPage]);
+
+  // Сброс страницы
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, sortType, sortOrder]);
+
   return (
-    <div className="min-h-screen flex flex-col items-center py-8 relative">
+    <div className="min-h-screen flex flex-col items-center py-4 sm:py-8 relative px-2 sm:px-0">
       <Particles
         id="tsparticles"
         init={particlesInit}
@@ -193,12 +330,12 @@ const App: React.FC = () => {
           detectRetina: true,
         }}
       />
-      <h1 className="text-4xl font-extrabold text-white drop-shadow-lg mb-8 tracking-tight animate-pulse-slow">
+      <h1 className="text-2xl sm:text-4xl font-extrabold text-white drop-shadow-lg mb-4 sm:mb-8 tracking-tight animate-pulse-slow text-center">
         My Blog
       </h1>
       {/* Кнопка Start */}
       {showStart && !profile && (
-        <div className="flex flex-col items-center justify-center min-h-[300px]">
+        <div className="flex flex-col items-center justify-center min-h-[200px] sm:min-h-[300px]">
           <button
             className="btn-primary text-xl px-8 py-3 shadow-lg"
             onClick={() => setShowProfileModal(true)}
@@ -214,14 +351,14 @@ const App: React.FC = () => {
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.95 }}
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black/40"
+            {...{ className: "fixed inset-0 z-50 flex items-center justify-center bg-black/40" }}
           >
             <div className="absolute inset-0" onClick={() => setShowProfileModal(false)} />
             <motion.div
               initial={{ y: 40, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
               exit={{ y: 40, opacity: 0 }}
-              className="relative w-full max-w-xs p-3 sm:max-w-sm sm:p-6 border border-white/30 bg-white/80 backdrop-blur-lg rounded-2xl shadow-2xl"
+              {...{ className: "relative w-full max-w-xs p-3 sm:max-w-sm sm:p-6 border border-white/30 bg-white/80 backdrop-blur-lg rounded-2xl shadow-2xl" }}
             >
               <h2 className="text-xl font-bold mb-4 text-center">Your Profile</h2>
               <input
@@ -269,21 +406,20 @@ const App: React.FC = () => {
           </motion.div>
         )}
       </AnimatePresence>
-      {/* Форма публикации и посты только если профиль есть */}
       {!showStart && profile && (
         <>
-          <div className="w-full max-w-xs p-3 sm:max-w-md sm:p-8 bg-white/20 rounded-2xl shadow-2xl mb-8 backdrop-blur-md border border-white/20 relative">
-            <form onSubmit={handlePost} className="flex flex-col gap-4">
-              <div className="flex items-center gap-3 mb-2">
+          <div className="w-full max-w-xs sm:max-w-md md:max-w-lg lg:max-w-xl p-2 sm:p-3 md:p-8 bg-white/20 rounded-2xl shadow-2xl mb-4 sm:mb-8 backdrop-blur-md border border-white/20 relative">
+            <form onSubmit={handlePost} className="flex flex-col gap-3 sm:gap-4">
+              <div className="flex items-center gap-2 sm:gap-3 mb-2">
                 <img
                   src={profile.avatar}
                   alt="avatar"
-                  className="w-10 h-10 rounded-full border border-gray-200 shadow"
+                  className="w-8 h-8 sm:w-10 sm:h-10 rounded-full border border-gray-200 shadow"
                 />
-                <span className="text-gray-700 font-semibold text-lg">{profile.name}</span>
+                <span className="text-gray-700 font-semibold text-base sm:text-lg">{profile.name}</span>
               </div>
               <textarea
-                className="input-field"
+                className="input-field min-h-[60px] sm:min-h-[80px]"
                 placeholder="What's new? (up to 280 characters)"
                 maxLength={280}
                 value={text}
@@ -293,18 +429,18 @@ const App: React.FC = () => {
                 <img
                   src={mediaPreview}
                   alt="preview"
-                  className="max-h-48 rounded-xl object-contain border border-gray-200 shadow"
+                  className="max-h-32 sm:max-h-48 rounded-xl object-contain border border-gray-200 shadow"
                 />
               )}
               {mediaPreview && mediaType === 'video' && (
                 <video
                   src={mediaPreview}
                   controls
-                  className="max-h-48 rounded-xl object-contain border border-gray-200 shadow"
+                  className="max-h-32 sm:max-h-48 rounded-xl object-contain border border-gray-200 shadow"
                 />
               )}
-              <div className="flex items-center gap-3">
-                <label className="btn-primary cursor-pointer">
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3">
+                <label className="btn-primary cursor-pointer w-full sm:w-auto text-center">
                   <input
                     type="file"
                     accept="image/*,video/*"
@@ -313,7 +449,7 @@ const App: React.FC = () => {
                   />
                   Choose file
                 </label>
-                <span className="text-gray-500 text-sm select-none">
+                <span className="text-gray-500 text-xs sm:text-sm select-none flex-1">
                   {media ? media.name : 'No file chosen'}
                 </span>
                 <button
@@ -323,36 +459,96 @@ const App: React.FC = () => {
                     setMediaPreview(null);
                     setMediaType(null);
                   }}
-                  className={`text-xs ml-auto font-semibold px-2 py-1 rounded transition-colors ${media ? 'text-blue-500 hover:underline cursor-pointer' : 'text-gray-300 cursor-not-allowed'}`}
+                  className={`text-xs font-semibold px-2 py-1 rounded transition-colors ${media ? 'text-blue-500 hover:underline cursor-pointer' : 'text-gray-300 cursor-not-allowed'}`}
                   disabled={!media}
                 >
                   Clear media
                 </button>
               </div>
-              {error && <div className="text-red-500 text-sm font-medium">{error}</div>}
-              <button type="submit" className="btn-primary mt-2">
+              {error && <div className="text-red-500 text-xs sm:text-sm font-medium">{error}</div>}
+              <button type="submit" className="btn-primary mt-2 w-full sm:w-auto">
                 Publish
               </button>
             </form>
           </div>
-          <div className="w-full max-w-md flex flex-col gap-4">
+
+          <div className="w-full max-w-md md:max-w-lg lg:max-w-xl mb-2 sm:mb-4 flex flex-col gap-2 sm:gap-4">
+            <div className="flex flex-col sm:flex-row gap-2 items-stretch sm:items-center">
+              <input
+                type="text"
+                placeholder="Поиск постов..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="flex-1 input-field text-sm sm:text-base py-2"
+              />
+              <select
+                value={`${sortType}-${sortOrder}`}
+                onChange={(e) => {
+                  const [type, order] = e.target.value.split('-') as [SortType, SortOrder];
+                  setSortType(type);
+                  setSortOrder(order);
+                }}
+                className="input-field text-sm sm:text-base py-2"
+              >
+                <option value="date-desc">Сначала новые</option>
+                <option value="date-asc">Сначала старые</option>
+                <option value="likes-desc">По лайкам (↓)</option>
+                <option value="likes-asc">По лайкам (↑)</option>
+              </select>
+            </div>
+
+            {/* Пагинация */}
+            {totalPages > 1 && (
+              <div className="flex justify-center gap-2 text-xs sm:text-base">
+                <button
+                  onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                  disabled={currentPage === 1}
+                  className="btn-primary py-1 px-3 text-xs sm:text-sm disabled:opacity-50"
+                >
+                  ←
+                </button>
+                <span className="flex items-center gap-1">
+                  Страница {currentPage} из {totalPages}
+                </span>
+                <button
+                  onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                  disabled={currentPage === totalPages}
+                  className="btn-primary py-1 px-3 text-xs sm:text-sm disabled:opacity-50"
+                >
+                  →
+                </button>
+              </div>
+            )}
+          </div>
+
+          <div className="w-full max-w-md md:max-w-lg lg:max-w-xl flex flex-col gap-2 sm:gap-4">
             <AnimatePresence>
-              {posts.map((post) => (
+              {paginatedPosts.map((post) => (
                 <motion.div
                   key={post.id}
                   initial={{ opacity: 0, y: 40 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: 40 }}
                   transition={{ duration: 0.4 }}
-                  className="card group"
+                  {...{ className: "card group" }}
                 >
-                  <button
-                    onClick={() => handleDelete(post.id)}
-                    className="absolute top-3 right-3 text-gray-400 hover:text-red-500 transition-colors text-xl font-bold opacity-0 group-hover:opacity-100 focus:opacity-100 focus:outline-none"
-                    title="Delete post"
-                  >
-                    ×
-                  </button>
+                  {/* Кнопки управления постом */}
+                  <div className="absolute top-3 right-3 flex gap-2 opacity-0 group-hover:opacity-100 focus-within:opacity-100">
+                    <button
+                      onClick={() => handleEditPost(post)}
+                      className="text-gray-400 hover:text-blue-500 transition-colors text-xl font-bold"
+                      title="Edit post"
+                    >
+                      ✎
+                    </button>
+                    <button
+                      onClick={() => handleDelete(post.id)}
+                      className="text-gray-400 hover:text-red-500 transition-colors text-xl font-bold"
+                      title="Delete post"
+                    >
+                      ×
+                    </button>
+                  </div>
                   <div className="flex items-center gap-3">
                     <img
                       src={post.avatar}
@@ -422,7 +618,7 @@ const App: React.FC = () => {
                           initial={{ opacity: 0, y: 10 }}
                           animate={{ opacity: 1, y: 0 }}
                           exit={{ opacity: 0, y: 10 }}
-                          className="flex items-center gap-2 mt-2 bg-gray-100 rounded-lg px-3 py-2"
+                          {...{ className: "flex items-center gap-2 mt-2 bg-gray-100 rounded-lg px-3 py-2" }}
                         >
                           <img src={c.avatar || defaultAvatar} alt="avatar" className="w-7 h-7 rounded-full border border-gray-200" />
                           <span className="font-semibold text-gray-700 text-xs">{c.author}:</span>
@@ -443,6 +639,94 @@ const App: React.FC = () => {
               ))}
             </AnimatePresence>
           </div>
+
+          {/* Модальное окно редактирования */}
+          <AnimatePresence>
+            {editingPost && (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.95 }}
+                {...{ className: "fixed inset-0 z-50 flex items-center justify-center bg-black/40" }}
+              >
+                <div className="absolute inset-0" onClick={() => setEditingPost(null)} />
+                <motion.div
+                  initial={{ y: 40, opacity: 0 }}
+                  animate={{ y: 0, opacity: 1 }}
+                  exit={{ y: 40, opacity: 0 }}
+                  {...{ className: "relative w-full max-w-md p-6 border border-white/30 bg-white/80 backdrop-blur-lg rounded-2xl shadow-2xl" }}
+                >
+                  <h2 className="text-xl font-bold mb-4">Редактировать пост</h2>
+                  <form onSubmit={handleSaveEdit} className="flex flex-col gap-4">
+                    <textarea
+                      className="input-field"
+                      placeholder="Редактировать текст..."
+                      value={editText}
+                      onChange={(e) => setEditText(e.target.value)}
+                      maxLength={280}
+                    />
+                    {editMediaPreview && editMediaType === 'image' && (
+                      <img
+                        src={editMediaPreview}
+                        alt="preview"
+                        className="max-h-48 rounded-xl object-contain border border-gray-200 shadow"
+                      />
+                    )}
+                    {editMediaPreview && editMediaType === 'video' && (
+                      <video
+                        src={editMediaPreview}
+                        controls
+                        className="max-h-48 rounded-xl object-contain border border-gray-200 shadow"
+                      />
+                    )}
+                    <div className="flex items-center gap-3">
+                      <label className="btn-primary cursor-pointer">
+                        <input
+                          type="file"
+                          accept="image/*,video/*"
+                          onChange={handleEditMediaChange}
+                          className="hidden"
+                        />
+                        Изменить медиа
+                      </label>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setEditMedia(null);
+                          setEditMediaPreview(null);
+                          setEditMediaType(null);
+                        }}
+                        className={`text-xs ml-auto font-semibold px-2 py-1 rounded transition-colors ${
+                          editMediaPreview
+                            ? 'text-blue-500 hover:underline cursor-pointer'
+                            : 'text-gray-300 cursor-not-allowed'
+                        }`}
+                        disabled={!editMediaPreview}
+                      >
+                        Удалить медиа
+                      </button>
+                    </div>
+                    <div className="flex gap-2">
+                      <button
+                        type="submit"
+                        className="btn-primary flex-1"
+                        disabled={!editText.trim() && !editMediaPreview}
+                      >
+                        Сохранить
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setEditingPost(null)}
+                        className="btn-primary flex-1 bg-gray-500 hover:bg-gray-600"
+                      >
+                        Отмена
+                      </button>
+                    </div>
+                  </form>
+                </motion.div>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </>
       )}
     </div>
